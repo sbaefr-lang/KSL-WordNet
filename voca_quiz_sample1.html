@@ -178,14 +178,10 @@
   }
   .pic-card .blank{
     display:inline-block;
-    min-width:88px;
-    padding:2px 8px;
-    border-bottom:3px solid var(--accent);
-    color:var(--accent);
-    font-weight:800;
+    min-width:64px;
   }
-  .pic-card .blank.correct{ color:var(--correct); border-bottom-color:var(--correct); }
-  .pic-card .blank.wrong{ color:var(--wrong); border-bottom-color:var(--wrong); }
+  .pic-card .blank.correct{ color:var(--correct); }
+  .pic-card .blank.wrong{ color:var(--wrong); }
   .pic-card .particle{ color:var(--muted); font-weight:600; }
 
   .type-row{
@@ -309,9 +305,29 @@
   @keyframes popin{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
   .feedback.correct-fb{ background:var(--correct-soft); }
   .feedback.wrong-fb{ background:var(--wrong-soft); }
-  .feedback .fb-title{ font-size:15px; font-weight:800; margin-bottom:11px; }
+  .feedback .fb-title{ font-size:15px; font-weight:800; margin-bottom:0; }
   .feedback.correct-fb .fb-title{ color:var(--correct); }
   .feedback.wrong-fb .fb-title{ color:var(--wrong); }
+  .fb-title-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:11px;
+  }
+  .next-inline-btn{
+    flex-shrink:0;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    padding:8px 16px;
+    border-radius:999px;
+    font-size:13.5px;
+    font-weight:800;
+    font-family:inherit;
+    cursor:pointer;
+  }
+  .next-inline-btn:active{ background:var(--deep); }
 
   .answer-panel{
     background:var(--accent-soft);
@@ -428,8 +444,7 @@
   .ws-list-item .ws-sentence{ font-size:13.5px; color:#222; line-height:1.65; }
   .ws-list-item .ws-write-line{
     display:inline-block;
-    min-width:74px;
-    border-bottom:1.3px solid #333;
+    min-width:90px;
     height:13px;
     margin:0 2px;
   }
@@ -545,7 +560,10 @@
 
         <button class="check-btn" id="a2-check" disabled>정답 확인</button>
         <div class="feedback" id="a2-feedback">
-          <div class="fb-title" id="a2-fb-title"></div>
+          <div class="fb-title-row">
+            <div class="fb-title" id="a2-fb-title"></div>
+            <button class="next-inline-btn" id="a2-next" style="display:none;">다음 →</button>
+          </div>
           <div class="answer-panel">
             <img id="a2-fb-img" src="" alt="">
             <div style="flex:1;">
@@ -554,7 +572,6 @@
             </div>
           </div>
         </div>
-        <button class="next-btn" id="a2-next" style="display:none;">다음 문제</button>
       </div>
 
       <div class="result-screen" id="a2-result">
@@ -586,12 +603,6 @@
           <div class="ws-fields">
             <div class="ws-field"><span>이름</span><span class="ws-line"></span></div>
             <div class="ws-field"><span>날짜</span><span class="ws-line"></span></div>
-          </div>
-
-          <div class="ws-note">
-            <div class="ws-note-title">문제 출제 안내 (제작 프롬프트)</div>
-            <div class="ws-note-item"><b>1. 그림 보고 고르기</b> — 그림을 보고 알맞은 한국어 단어를 4개의 보기(정답 1개 + 오답 3개) 중에서 고르는 객관식 문제로 구성했습니다.</div>
-            <div class="ws-note-item"><b>2. 빈칸 채우기</b> — "교실에 무엇이 있어요? ( )이/가 있어요." 문장을 완성하도록 알맞은 단어를 직접 쓰는 주관식 문제로 구성했습니다. (모바일 퀴즈에서는 오답 시 자동으로 힌트를 주지 않고, 정답을 잘 모를 때 입력창 옆 💡 버튼을 눌러 초성 힌트를 직접 확인할 수 있습니다.)</div>
           </div>
 
           <div class="ws-section">
@@ -828,7 +839,7 @@ function createQuiz(prefix, mode){
 const quizA1 = createQuiz('a1', 'title');
 
 /* ---------- Tab 2: typing quiz ---------- */
-const a2 = { order:[], idx:0, score:0, wrongOnCurrent:false, answered:false };
+const a2 = { order:[], idx:0, score:0, answered:false };
 const ela2 = id => document.getElementById(`a2-${id}`);
 
 function initA2(){
@@ -842,9 +853,7 @@ function initA2(){
 }
 
 function renderA2Question(){
-  a2.wrongOnCurrent = false;
   a2.answered = false;
-  a2.hintUsed = false;
   const answer = a2.order[a2.idx];
 
   ela2('img').src = dataUri(answer);
@@ -887,7 +896,6 @@ function toggleA2Hint(){
     hint.classList.remove('show');
     btn.classList.remove('active');
   } else {
-    a2.hintUsed = true;
     hint.textContent = `초성 힌트: "${choseongHint(answer)}"`;
     hint.classList.add('show');
     btn.classList.add('active');
@@ -902,31 +910,31 @@ function checkA2(){
   const answer = a2.order[a2.idx];
   const isCorrect = isAcceptable(answer, typed);
 
-  if(isCorrect){
-    a2.answered = true;
-    input.disabled = true;
-    input.classList.add('correct');
-    const blank = ela2('blank');
-    blank.textContent = answer;
-    blank.classList.add('correct');
-    ela2('particle').textContent = subjectParticle(answer);
-    if(!a2.wrongOnCurrent) a2.score++;
-    ela2('score').textContent = `현재 ${a2.score}점`;
-    ela2('hint').classList.remove('show');
-    ela2('hintbtn').disabled = true;
+  a2.answered = true;
+  input.disabled = true;
+  ela2('hintbtn').disabled = true;
+  ela2('hint').classList.remove('show');
 
-    const fb = ela2('feedback');
+  const blank = ela2('blank');
+
+  const fb = ela2('feedback');
+  if(isCorrect){
+    input.classList.add('correct');
+    blank.classList.add('correct');
+    a2.score++;
+    ela2('score').textContent = `현재 ${a2.score}점`;
     fb.classList.add('show','correct-fb');
     ela2('fb-title').textContent = '잘했어요! 정답이에요.';
-    fillA2Explain(answer);
-
-    ela2('check').style.display = 'none';
-    ela2('next').style.display = '';
   } else {
-    a2.wrongOnCurrent = true;
     input.classList.add('wrong');
-    setTimeout(()=> input.classList.remove('wrong'), 350);
+    blank.classList.add('wrong');
+    fb.classList.add('show','wrong-fb');
+    ela2('fb-title').textContent = `아쉬워요. 정답은 "${answer}"예요.`;
   }
+  fillA2Explain(answer);
+
+  ela2('check').style.display = 'none';
+  ela2('next').style.display = '';
 }
 
 function fillA2Explain(answer){
